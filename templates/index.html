@@ -2,7 +2,9 @@
 <html>
 <head>
     <title>RPi CAR</title>
-    <script type="text/javascript" src="//code.jquery.com/jquery-1.4.2.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+    <script src="https://cdn.rawgit.com/konvajs/konva/2.0.3/konva.min.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
     <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
     <script type="text/javascript" charset="utf-8">
         $(document).ready(function() {
@@ -16,35 +18,40 @@
             // Connect to the Socket.IO server.
             // The connection URL has the following format:
             //     http[s]://<domain>:<port>[/<namespace>]
-            var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace);
+            //var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace);
+            var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
 
             // Event handler for server sent data.
             // The callback function is invoked whenever the server emits data
             // to the client. The data is then displayed in the "Received"
             // section of the page.
-            socket.on('distances_car', function(msg) {
-                $('#log').append('<br>' + $('<div/>').text('Distances->'
-                    + ' front:' + msg['front']
-                    + ' side: ' + msg['side']
-                    + ' back: ' + msg['back']).html());
+            socket.on('car_distances', function(msg) {
+                $(".form-control.top").val(parseInt(msg.front));
+                $(".form-control.left").val(parseInt(msg.side));
+                $(".form-control.bottom").val(parseInt(msg.back));
             });
 
             // Handlers for the different forms in the page.
             // These accept data from the user and send it to the server in a
             // variety of ways
-            $('form#forward').submit(function(event) {
-                socket.emit('forward_car', {data: $('#forward_data').val()});
+            $('form#scan_storage').submit(function(event) {
+                socket.emit('scan_storage', {data: $('#scan_storage_data').val()});
+            });
+
+            $(".scan-button").on("click", () => {
+                console.log("click! 1");
+                socket.emit('scan_storage', {data: $('#scan_storage_data').val()});
                 return false;
             });
 
-            $('form#backward').submit(function(event) {
+            $(".back-button").on("click", () => {
+                console.log("back! ");
                 socket.emit('backward_car', {data: $('#backward_data').val()});
-                return false;
             });
 
-            $('form#stop').submit(function(event) {
+            $(".stop-button").on("click", () => {
+                console.log("stop");
                 socket.emit('stop_car', {data: $('#stop_data').val()});
-                return false;
             });
 
             $('form#disconnect').submit(function(event) {
@@ -53,33 +60,116 @@
             });
         });
     </script>
+    <style type="text/css" rel="stylesheet">
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .canvas-container {
+            position: absolute;
+            height: 100%;
+            left: 0;
+            width: 465px;
+            border-right: 1px solid #cccccc;
+        }
+
+        .app-container {
+            position: absolute;
+            height: 100%;
+            left: 465px;
+            right: 0;
+        }
+
+        .app-container .scan-container {
+            padding-top: 25px;
+            text-align: center;
+        }
+
+        .app-container .distance-info {
+            position: relative;
+            margin: 50px auto 0 auto;
+            width: 304px;
+            height: 328px;
+        }
+
+        .app-container .distance-info .distance {
+            width: 97px;
+            position: absolute;
+        }
+
+        .app-container .distance-info .distance.top {
+            top: -40px;
+            left: 50%;
+            margin-left: -16px;
+        }
+
+        .app-container .distance-info .distance.left {
+            top: 50%;
+            left: -80px;
+            margin-top: -19px;
+        }
+
+        .app-container .distance-info .distance.bottom {
+            bottom: -40px;
+            left: 50%;
+            margin-left: -16px;
+        }
+
+        .app-container .distance-info .distance .form-control {
+            display: inline-block;
+            width: 67px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Flask-SocketIO Test</h1>
-    <p>Async mode is: <b>{{ async_mode }}</b></p>
-    <p>Average ping/pong latency: <b><span id="ping-pong"></span>ms</b></p>
-    <h2>Send:</h2>
+    <div class="canvas-container"></div>
+    <div class="app-container">
+        <div class="scan-container">
+            <button class="btn btn-primary scan-button">Scan warehouse</button>
+            <button class="btn btn-danger stop-button">Stop</button>
+            <button class="btn btn-secondary back-button">Back</button>
+            <div class="scan-info">
+            </div>
+            <div class="distance-info">
+                <div class="distance top">
+                    <input type="text" class="form-control top" readonly>
+                    <span>cm</span>
+                </div>
+                <div class="distance left">
+                    <input type="text" class="form-control left" readonly>
+                    <span>cm</span>
+                </div>
+                <div class="distance bottom">
+                    <input type="text" class="form-control bottom" readonly>
+                    <span>cm</span>
+                </div>
+                <img src="https://bytebucket.org/luci_pacurar/rpi/raw/ec59092a8b1469412681693f1724ad8703ff04f1/img/robbie-05%402x.png" alt="">
+            </div>
+        </div>
+    </div>
 
-    <form id="forward" method="POST" action='#'>
-        <input type="text" name="forward_data" id="forward_data" placeholder="Message">
-        <input type="submit" value="Forward Car">
-    </form>
+    <!--<h1>RPi Car</h1>-->
+    <!--<form id="scan_storage" method="POST" action='#'>-->
+        <!--<input type="text" name="scan_storage_data" id="scan_storage_data" placeholder="Message">-->
+        <!--<input type="submit" value="Scan Storage">-->
+    <!--</form>-->
 
-    <form id="backward" method="POST" action='#'>
-        <input type="text" name="backward_data" id="backward_data" placeholder="Message">
-        <input type="submit" value="Backward Car">
-    </form>
+    <!--<form id="backward" method="POST" action='#'>-->
+        <!--<input type="text" name="backward_data" id="backward_data" placeholder="Message">-->
+        <!--<input type="submit" value="Backward Car">-->
+    <!--</form>-->
 
-    <form id="stop" method="POST" action='#'>
-        <input type="text" name="stop_data" id="stop_data" placeholder="Message">
-        <input type="submit" value="Stop Car">
-    </form>
+    <!--<form id="stop" method="POST" action='#'>-->
+        <!--<input type="text" name="stop_data" id="stop_data" placeholder="Message">-->
+        <!--<input type="submit" value="Stop Car">-->
+    <!--</form>-->
 
-    <form id="disconnect" method="POST" action="#">
-        <input type="submit" value="Disconnect">
-    </form>
+    <!--<form id="disconnect" method="POST" action="#">-->
+        <!--<input type="submit" value="Disconnect">-->
+    <!--</form>-->
 
-    <h2>Receive:</h2>
-    <div id="log"></div>
+    <!--<h2>Receive:</h2>-->
+    <!--<div id="log"></div>-->
 </body>
 </html>
