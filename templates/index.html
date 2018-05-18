@@ -25,7 +25,7 @@
             // The callback function is invoked whenever the server emits data
             // to the client. The data is then displayed in the "Received"
             // section of the page.
-            socket.on('car_distances', function(msg) {
+            socket.on('car_distances', function (msg) {
                 $(".form-control.top").val(parseInt(msg.front));
                 $(".form-control.left").val(parseInt(msg.side));
                 $(".form-control.bottom").val(parseInt(msg.back));
@@ -34,7 +34,7 @@
             // Handlers for the different forms in the page.
             // These accept data from the user and send it to the server in a
             // variety of ways
-            $('form#scan_storage').submit(function(event) {
+            $('form#scan_storage').submit(function (event) {
                 socket.emit('scan_storage', {data: $('#scan_storage_data').val()});
             });
 
@@ -54,10 +54,77 @@
                 socket.emit('stop_car', {data: $('#stop_data').val()});
             });
 
-            $('form#disconnect').submit(function(event) {
+            $('form#disconnect').submit(function (event) {
                 socket.emit('disconnect_request');
                 return false;
             });
+
+            const boxWidth = 65;
+            const $canvasContainer = $(".canvas-container");
+
+            // Canvas
+            const stage = new Konva.Stage({
+                container: ".canvas-container",
+                width: $canvasContainer.innerWidth(),
+                height: $canvasContainer.innerHeight()
+            });
+
+            const layer = new Konva.Layer();
+
+            stage.add(layer);
+
+            const box = new Konva.Rect({
+                x: 0,
+                y: stage.getHeight() - 200,
+                height: 100,
+                width: boxWidth,
+                fill: "green",
+                stroke: "black",
+                strokeWidth: 2
+            });
+
+            layer.add(box);
+            layer.draw();
+
+
+
+            let robot;
+            const robotWidth = 152;
+            const robotHeight = 164;
+            const robotImage = new Image();
+            robotImage.src ="https://bytebucket.org/luci_pacurar/rpi/raw/ec59092a8b1469412681693f1724ad8703ff04f1/img/robbie-05%402x.png"
+            robotImage.onload = () => {
+                robot = new Konva.Image({
+                    x: ($canvasContainer.innerWidth()-boxWidth)/2 - robotWidth/2 + boxWidth,
+                    y: $canvasContainer.innerHeight() - robotHeight,
+                    image: robotImage,
+                    width: robotWidth,
+                    height: robotHeight
+                });
+                layer.add(robot);
+                layer.draw();
+            };
+
+            $(window).on("resize", () => {
+                robot.y($canvasContainer.innerHeight()-robotHeight);
+                stage.setWidth($canvasContainer.innerWidth());
+                stage.setHeight(($canvasContainer.innerHeight()));
+            });
+
+            socket.on("car_location", (msg) => {
+                requestAnimationFrame(()=> {
+
+                    let posY = (1 - msg.car_location) * $canvasContainer.innerHeight();
+                    console.log(posY);
+
+                    if(posY > $canvasContainer.innerHeight() - robotHeight)
+                        posY = $canvasContainer.innerHeight() - robotHeight;
+
+                    robot.y(posY);
+                    layer.draw();
+                });
+            });
+
         });
     </script>
     <style type="text/css" rel="stylesheet">
@@ -148,28 +215,5 @@
             </div>
         </div>
     </div>
-
-    <!--<h1>RPi Car</h1>-->
-    <!--<form id="scan_storage" method="POST" action='#'>-->
-        <!--<input type="text" name="scan_storage_data" id="scan_storage_data" placeholder="Message">-->
-        <!--<input type="submit" value="Scan Storage">-->
-    <!--</form>-->
-
-    <!--<form id="backward" method="POST" action='#'>-->
-        <!--<input type="text" name="backward_data" id="backward_data" placeholder="Message">-->
-        <!--<input type="submit" value="Backward Car">-->
-    <!--</form>-->
-
-    <!--<form id="stop" method="POST" action='#'>-->
-        <!--<input type="text" name="stop_data" id="stop_data" placeholder="Message">-->
-        <!--<input type="submit" value="Stop Car">-->
-    <!--</form>-->
-
-    <!--<form id="disconnect" method="POST" action="#">-->
-        <!--<input type="submit" value="Disconnect">-->
-    <!--</form>-->
-
-    <!--<h2>Receive:</h2>-->
-    <!--<div id="log"></div>-->
 </body>
 </html>
