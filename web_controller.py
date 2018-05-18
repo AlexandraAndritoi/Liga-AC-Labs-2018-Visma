@@ -4,7 +4,7 @@ from storage_service import StorageService
 
 class WebController:
     def __init__(self):
-        self.storage_service = StorageService(self.publish_distances)
+        self.storage_service = StorageService(self.publish_distances, self.publish_location)
 
     def index(self):
         return render_template('index.html')
@@ -20,3 +20,6 @@ class WebController:
 
     def publish_distances(self, front_dist, side_dist, back_dist):
         emit('car_distances', {'front': front_dist, 'side': side_dist, 'back': back_dist})
+
+    def publish_location(self, car_location):
+        emit('car_location', {'car_location': car_location})
